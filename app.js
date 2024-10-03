@@ -7,6 +7,7 @@ const GoogleStrategy = require('passport-google-oauth20').Strategy;
 const { Pool } = require('pg');
 const path = require('path');
 const schedule = require('./schedule'); // Importando os dados da programação
+const bodyParser = require('body-parser'); // Adicionado para parsear o corpo das requisições
 
 const app = express();
 
@@ -41,6 +42,8 @@ app.set('views', path.join(__dirname, 'views'));
 app.use(express.static(path.join(__dirname, 'public')));
 app.use(express.urlencoded({ extended: true }));
 app.use(express.json());
+app.use(bodyParser.urlencoded({ extended: true }));
+app.use(bodyParser.json());
 
 // Estratégia do Passport para Google OAuth
 passport.use(new GoogleStrategy({
@@ -130,7 +133,20 @@ app.get('/', async (req, res) => {
 
 // Página de Login
 app.get('/login', (req, res) => {
-    res.render('login');
+    res.render('login', { error: null });
+});
+
+// Rota para processar o formulário de login com senha
+app.post('/login', (req, res) => {
+    const { password } = req.body;
+
+    if (password === process.env.APP_PASSWORD) {
+        // Senha correta, redireciona para a autenticação com Google
+        res.redirect('/auth/google');
+    } else {
+        // Senha incorreta, re-renderiza a página de login com uma mensagem de erro
+        res.render('login', { error: 'Senha incorreta. Tente novamente.' });
+    }
 });
 
 // Rotas de Autenticação com Google

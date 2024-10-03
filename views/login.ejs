@@ -35,6 +35,12 @@
             font-size: 1.5rem;
             margin-right: 0.5rem;
         }
+
+        /* Estilos para erros */
+        .error-message {
+            color: #ff4d4d;
+            margin-bottom: 1rem;
+        }
     </style>
 </head>
 <body class="bg-dark">
@@ -42,10 +48,23 @@
         <div class="card login-card text-center">
             <h1 class="mb-3 display-3 text-light fw-bold">BeatBuddy</h1>
             <p class="mb-4 fs-3 text-light">Tomorrowland Brasil 2024</p>
-            <a href="/auth/google" class="btn btn-google btn-lg d-flex align-items-center justify-content-center button-login">
-                <i class="bi bi-google"></i>
-                Login com Google
-            </a>
+
+            <% if (error) { %>
+                <div class="error-message">
+                    <i class="bi bi-exclamation-triangle-fill"></i> <%= error %>
+                </div>
+            <% } %>
+
+            <form action="/login" method="POST">
+                <div class="mb-3">
+                    <label for="password" class="form-label text-light">Senha de Acesso</label>
+                    <input type="password" class="form-control" id="password" name="password" placeholder="Digite a senha" required>
+                </div>
+                <button type="submit" class="btn btn-google btn-lg w-100 d-flex align-items-center justify-content-center">
+                    <i class="bi bi-google"></i>
+                    Login com Google
+                </button>
+            </form>
         </div>
     </div>
 </body>
