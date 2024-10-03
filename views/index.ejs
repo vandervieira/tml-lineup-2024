@@ -131,13 +131,13 @@
                                                         <div>
                                                             <strong><%= artistName %></strong><br>
                                                             <small class="time"><%= time %></small><br>
-                                                            <% if(selections[artistName] && selections[artistName].count > 0) { %>
-                                                                <div class="mt-2 d-flex flex-wrap user-list" data-artist="<%= artistName %>">
+                                                            <div class="mt-2 d-flex flex-wrap user-list" data-artist="<%= artistName %>">
+                                                                <% if(selections[artistName] && selections[artistName].count > 0) { %>
                                                                     <% selections[artistName].users.forEach(u => { %>
                                                                         <img src="<%= u.photo_url %>" alt="<%= u.name %>" class="user-photo me-2 mb-2" width="40" height="40" data-user-id="<%= u.id %>">
                                                                     <% }); %>
-                                                                </div>
-                                                            <% } %>
+                                                                <% } %>
+                                                            </div>
                                                         </div>
                                                         <% if(user) { %>
                                                             <button class="btn btn-sm <%= isSelected ? 'btn-danger deselect-btn' : 'btn-primary select-btn' %>" data-artist="<%= artistName %>">
@@ -254,7 +254,7 @@
                     try {
                         const response = await axios.post('/select-artists', { artists: artist });
                         if(response.data.success){
-                            // Atualizar o estado do botão
+                            // Atualizar o estado do botão localmente
                             if(isSelected){
                                 button.textContent = 'Vou certo';
                                 button.classList.remove('btn-danger', 'deselect-btn');
@@ -264,6 +264,8 @@
                                 button.classList.remove('btn-primary', 'select-btn');
                                 button.classList.add('btn-danger', 'deselect-btn');
                             }
+                            // Atualizar a lista de usuários (opcional, pois Socket.io deve já cuidar disso)
+                            // Mas para garantir a responsividade, você pode chamar updateUserList(artist);
                         } else {
                             console.error(response.data.message);
                         }
@@ -302,7 +304,7 @@
                 }
             }
 
-            // Funcão para mostrar perfil do usuário no modal
+            // Função para mostrar perfil do usuário no modal
             async function showUserProfile(userId) {
                 try {
                     const response = await axios.get(`/user-profile/${userId}`);
@@ -371,11 +373,12 @@
 
             // Escutar eventos do Socket.io para atualizações de seleção
             socket.on('artistSelected', ({ artist, user }) => {
+                console.log(`Evento 'artistSelected' recebido para o artista: ${artist} pelo usuário: ${user.name}`);
                 const artistSection = document.querySelector(`.user-list[data-artist="${artist}"]`);
-                if(artistSection){
+                if (artistSection) {
                     // Verificar se o usuário já está listado
                     const existingImg = artistSection.querySelector(`img[data-user-id="${user.id}"]`);
-                    if(!existingImg){
+                    if (!existingImg) {
                         const img = document.createElement('img');
                         img.src = user.photo_url || '/default-user.png';
                         img.alt = user.name;
@@ -388,10 +391,13 @@
                         });
                         artistSection.appendChild(img);
                     }
+                } else {
+                    console.warn(`O contêiner .user-list para o artista "${artist}" não foi encontrado.`);
                 }
             });
 
             socket.on('artistDeselected', ({ artist, user }) => {
+                console.log(`Evento 'artistDeselected' recebido para o artista: ${artist} pelo usuário: ${user.name}`);
                 const artistSection = document.querySelector(`.user-list[data-artist="${artist}"]`);
                 if(artistSection){
                     const imgs = artistSection.querySelectorAll(`img[data-user-id="${user.id}"]`);
@@ -399,7 +405,7 @@
                 }
             });
         <% } else { %>
-            // Função para mostrar perfil do usuário no modal (sem autenticação)
+            // Funcão para mostrar perfil do usuário no modal (sem autenticação)
             async function showUserProfile(userId) {
                 try {
                     const response = await axios.get(`/user-profile/${userId}`);
@@ -468,11 +474,12 @@
 
             // Escutar eventos do Socket.io para atualizações de seleção
             socket.on('artistSelected', ({ artist, user }) => {
+                console.log(`Evento 'artistSelected' recebido para o artista: ${artist} pelo usuário: ${user.name}`);
                 const artistSection = document.querySelector(`.user-list[data-artist="${artist}"]`);
-                if(artistSection){
+                if (artistSection) {
                     // Verificar se o usuário já está listado
                     const existingImg = artistSection.querySelector(`img[data-user-id="${user.id}"]`);
-                    if(!existingImg){
+                    if (!existingImg) {
                         const img = document.createElement('img');
                         img.src = user.photo_url || '/default-user.png';
                         img.alt = user.name;
@@ -485,10 +492,13 @@
                         });
                         artistSection.appendChild(img);
                     }
+                } else {
+                    console.warn(`O contêiner .user-list para o artista "${artist}" não foi encontrado.`);
                 }
             });
 
             socket.on('artistDeselected', ({ artist, user }) => {
+                console.log(`Evento 'artistDeselected' recebido para o artista: ${artist} pelo usuário: ${user.name}`);
                 const artistSection = document.querySelector(`.user-list[data-artist="${artist}"]`);
                 if(artistSection){
                     const imgs = artistSection.querySelectorAll(`img[data-user-id="${user.id}"]`);
