@@ -1,3 +1,5 @@
+/* public/styles.css */
+
 /* Ajustes gerais */
 html, body {
     height: 100%;
@@ -128,6 +130,70 @@ footer a:hover {
     font-weight: bold;
 }
 
+/* Estilo para as fotos dos usuários */
+.user-photo {
+    object-fit: cover;
+    border: 2px solid #32CD32; /* Verde similar ao tema */
+    border-radius: 50%;
+    cursor: pointer; /* Indica que é clicável */
+}
+
+/* Estilos para o Modal */
+.modal-user-photo {
+    width: 150px;
+    height: 150px;
+    object-fit: cover;
+    border: 3px solid #32CD32;
+    border-radius: 50%;
+    display: block;
+    margin: 0 auto 20px auto;
+}
+
+.modal-user-name {
+    text-align: center;
+    font-size: 2rem;
+    margin-bottom: 20px;
+}
+
+.artist-list {
+    list-style-type: none;
+    padding-left: 0;
+}
+
+.artist-list li {
+    margin-bottom: 10px;
+}
+
+.artist-stage {
+    margin-left: 20px;
+}
+
+/* Adicionando espaçamento no Modal */
+.modal-body {
+    padding-top: 20px;
+}
+
+/* Rodapé */
+footer {
+    background-color: #0d0d0d;
+    padding: 1rem 0;
+    text-align: center;
+    width: 100%;
+    position: relative;
+    bottom: 0;
+}
+
+footer a {
+    color: #32CD32;
+    text-decoration: none;
+    font-weight: bold;
+}
+
+footer a:hover {
+    color: #16a085;
+    text-decoration: underline;
+}
+
 /* Ajustes para dispositivos móveis */
 @media (max-width: 768px) {
     body {
@@ -160,5 +226,23 @@ footer a:hover {
     .button-login {
         font-size: 1.5rem;
         padding: 1rem 2rem;
+    }
+
+    /* Ajustes para o Modal em dispositivos móveis */
+    .modal-user-photo {
+        width: 100px;
+        height: 100px;
+    }
+
+    .modal-user-name {
+        font-size: 1.5rem;
+    }
+
+    .artist-list li {
+        font-size: 1rem;
+    }
+
+    .artist-stage {
+        margin-left: 15px;
     }
 }

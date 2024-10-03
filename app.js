@@ -8,6 +8,8 @@ const { Pool } = require('pg');
 const path = require('path');
 const schedule = require('./schedule'); // Importando os dados da programação
 const bodyParser = require('body-parser'); // Adicionado para parsear o corpo das requisições
+const http = require('http');
+const { Server } = require("socket.io");
 
 const app = express();
 
@@ -59,10 +61,11 @@ passport.use(new GoogleStrategy({
             if (res.rows.length > 0) {
                 user = res.rows[0];
             } else {
-                // Inserir novo usuário
+                // Inserir novo usuário com photo_url
+                const photoUrl = profile.photos && profile.photos.length > 0 ? profile.photos[0].value : null;
                 const insertRes = await pool.query(
-                    'INSERT INTO public.users (google_id, email, name) VALUES ($1, $2, $3) RETURNING *',
-                    [profile.id, profile.emails[0].value, profile.displayName]
+                    'INSERT INTO public.users (google_id, email, name, photo_url) VALUES ($1, $2, $3, $4) RETURNING *',
+                    [profile.id, profile.emails[0].value, profile.displayName, photoUrl]
                 );
                 user = insertRes.rows[0];
             }
@@ -96,6 +99,19 @@ function isAuthenticated(req, res, next) {
     res.redirect('/login');
 }
 
+// Criando o servidor HTTP e o Socket.io
+const server = http.createServer(app);
+const io = new Server(server);
+
+// Configuração do Socket.io
+io.on('connection', (socket) => {
+    console.log('Um usuário conectado');
+
+    socket.on('disconnect', () => {
+        console.log('Usuário desconectado');
+    });
+});
+
 // Rotas
 
 // Página Inicial com Programação e Interações Condicionais
@@ -104,7 +120,7 @@ app.get('/', async (req, res) => {
         // Obter artistas e contagem de seleções e usuários que selecionaram
         const artistsRes = await pool.query(`
             SELECT a.artist_name, COUNT(a.user_id) as count,
-                   STRING_AGG(u.name, ', ') AS users
+                   json_agg(json_build_object('id', u.id, 'name', u.name, 'photo_url', u.photo_url)) AS users
             FROM public.artist_selections a
             JOIN public.users u ON a.user_id = u.id
             GROUP BY a.artist_name
@@ -116,7 +132,7 @@ app.get('/', async (req, res) => {
         artistsRes.rows.forEach(row => {
             selections[row.artist_name] = {
                 count: row.count,
-                users: row.users ? row.users.split(', ') : []
+                users: row.users || []
             };
         });
 
@@ -182,10 +198,30 @@ app.post('/select-artists', isAuthenticated, async (req, res) => {
             // Artista já selecionado, remover seleção
             await pool.query('DELETE FROM public.artist_selections WHERE user_id = $1 AND artist_name = $2', [req.user.id, selectedArtist]);
             res.json({ success: true, message: 'Artista deselecionado.' });
+
+            // Emitir evento de deseleção via Socket.io
+            io.emit('artistDeselected', { 
+                artist: selectedArtist, 
+                user: { 
+                    id: req.user.id, 
+                    name: req.user.name, 
+                    photo_url: req.user.photo_url 
+                } 
+            });
         } else {
             // Artista não selecionado, adicionar seleção
             await pool.query('INSERT INTO public.artist_selections (user_id, artist_name) VALUES ($1, $2)', [req.user.id, selectedArtist]);
             res.json({ success: true, message: 'Artista selecionado.' });
+
+            // Emitir evento de seleção via Socket.io
+            io.emit('artistSelected', { 
+                artist: selectedArtist, 
+                user: { 
+                    id: req.user.id, 
+                    name: req.user.name, 
+                    photo_url: req.user.photo_url 
+                } 
+            });
         }
     } catch (err) {
         console.error(err);
@@ -202,13 +238,13 @@ app.get('/artist-users', async (req, res) => {
 
     try {
         const result = await pool.query(`
-            SELECT u.name 
+            SELECT u.id, u.name, u.photo_url
             FROM public.artist_selections a
             JOIN public.users u ON a.user_id = u.id
             WHERE a.artist_name = $1
         `, [artist]);
 
-        const users = result.rows.map(row => row.name);
+        const users = result.rows.map(row => ({ id: row.id, name: row.name, photo_url: row.photo_url }));
         res.json({ success: true, users });
     } catch (err) {
         console.error(err);
@@ -216,8 +252,57 @@ app.get('/artist-users', async (req, res) => {
     }
 });
 
-// Iniciando o Servidor
+// Nova Rota para Obter Perfil do Usuário
+app.get('/user-profile/:id', isAuthenticated, async (req, res) => {
+    const userId = req.params.id;
+    try {
+        // Obter dados do usuário
+        const userRes = await pool.query('SELECT name, photo_url FROM users WHERE id = $1', [userId]);
+        if (userRes.rows.length === 0) {
+            return res.status(404).json({ success: false, message: 'Usuário não encontrado.' });
+        }
+        const user = userRes.rows[0];
+
+        // Obter artistas selecionados pelo usuário
+        const selectionsRes = await pool.query('SELECT artist_name FROM artist_selections WHERE user_id = $1', [userId]);
+        const artistNames = selectionsRes.rows.map(row => row.artist_name);
+
+        // Mapear cada artista para dia e palco
+        const selectedArtists = {};
+        Object.keys(schedule).forEach(day => {
+            Object.keys(schedule[day]).forEach(stage => {
+                schedule[day][stage].forEach(artistObj => {
+                    const artist = Object.keys(artistObj)[0];
+                    if (artistNames.includes(artist)) {
+                        if (!selectedArtists[day]) {
+                            selectedArtists[day] = {};
+                        }
+                        if (!selectedArtists[day][stage]) {
+                            selectedArtists[day][stage] = [];
+                        }
+                        selectedArtists[day][stage].push(artist);
+                    }
+                });
+            });
+        });
+
+        return res.json({
+            success: true,
+            user: {
+                name: user.name,
+                photo_url: user.photo_url
+            },
+            selectedArtists
+        });
+
+    } catch (err) {
+        console.error(err);
+        return res.status(500).json({ success: false, message: 'Erro ao recuperar o perfil do usuário.' });
+    }
+});
+
+// Iniciando o Servidor com Socket.io
 const PORT = process.env.PORT || 3000;
-app.listen(PORT, () => {
+server.listen(PORT, () => {
     console.log(`Servidor rodando na porta ${PORT}`);
 });

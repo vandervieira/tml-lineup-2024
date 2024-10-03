@@ -6,6 +6,43 @@
     <title>BeatBuddy</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="/styles.css">
+    <style>
+        .user-photo {
+            object-fit: cover;
+            border: 2px solid #32CD32;
+            border-radius: 50%;
+            cursor: pointer; /* Indica que é clicável */
+        }
+        /* Estilos para o Modal */
+        .modal-user-photo {
+            width: 150px;
+            height: 150px;
+            object-fit: cover;
+            border: 3px solid #32CD32;
+            border-radius: 50%;
+            display: block;
+            margin: 0 auto 20px auto;
+        }
+        .modal-user-name {
+            text-align: center;
+            font-size: 2rem;
+            margin-bottom: 20px;
+        }
+        .artist-list {
+            list-style-type: none;
+            padding-left: 0;
+        }
+        .artist-list li {
+            margin-bottom: 10px;
+        }
+        .artist-stage {
+            margin-left: 20px;
+        }
+        /* Adicionando espaçamento no Modal */
+        .modal-body {
+            padding-top: 20px;
+        }
+    </style>
     <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
 </head>
 <body>
@@ -86,18 +123,18 @@
                                                 <% schedule[day][stage].forEach(artistObj => { 
                                                     const artistName = Object.keys(artistObj)[0];
                                                     const time = artistObj[artistName];
-                                                    const isSelected = user && selections[artistName] && selections[artistName].users.includes(user.name);
+                                                    const isSelected = user && selections[artistName] && selections[artistName].users.find(u => u.name === user.name);
                                                 %>
                                                     <li class="list-group-item d-flex justify-content-between align-items-center">
                                                         <div>
                                                             <strong><%= artistName %></strong><br>
                                                             <small class="time"><%= time %></small><br>
                                                             <% if(selections[artistName] && selections[artistName].count > 0) { %>
-                                                                <small class="text-muted">
-                                                                    <span class="user-list" data-artist="<%= artistName %>">
-                                                                        <%= selections[artistName].users.join(', ') %>
-                                                                    </span>
-                                                                </small>
+                                                                <div class="mt-2 d-flex flex-wrap">
+                                                                    <% selections[artistName].users.forEach(u => { %>
+                                                                        <img src="<%= u.photo_url %>" alt="<%= u.name %>" class="user-photo me-2 mb-2" width="40" height="40" data-user-id="<%= u.id %>">
+                                                                    <% }); %>
+                                                                </div>
                                                             <% } %>
                                                         </div>
                                                         <% if(user) { %>
@@ -121,18 +158,23 @@
         </div>
     </div>
 
-    <!-- Modal para Mostrar Usuários que Selecionaram um Artista -->
-    <div class="modal fade" id="usersModal" tabindex="-1" aria-labelledby="usersModalLabel" aria-hidden="true">
-      <div class="modal-dialog">
-        <div class="modal-content">
-          <div class="modal-header">
-            <h5 class="modal-title" id="usersModalLabel">Usuários que Selecionaram</h5>
-            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fechar"></button>
+    <!-- Modal para Mostrar Perfil do Usuário -->
+    <div class="modal fade" id="userProfileModal" tabindex="-1" aria-labelledby="userProfileModalLabel" aria-hidden="true">
+      <div class="modal-dialog modal-lg modal-dialog-centered">
+        <div class="modal-content bg-dark text-light">
+          <div class="modal-header border-0">
+            <h5 class="modal-title" id="userProfileModalLabel">Perfil do Usuário</h5>
+            <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Fechar"></button>
           </div>
-          <div class="modal-body" id="modal-body-content">
-            <!-- Conteúdo será inserido via JavaScript -->
+          <div class="modal-body">
+            <img src="" alt="Foto do Usuário" class="modal-user-photo">
+            <h2 class="modal-user-name"></h2>
+            <h4>Artistas Confirmados:</h4>
+            <ul class="artist-list" id="artist-list">
+                <!-- Lista de artistas será inserida aqui via JavaScript -->
+            </ul>
           </div>
-          <div class="modal-footer">
+          <div class="modal-footer border-0">
             <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Fechar</button>
           </div>
         </div>
@@ -194,25 +236,9 @@
         });
 
         <% if (user) { %>
-            // Função para atualizar a lista de usuários via AJAX
-            async function updateUserList(artist) {
-                try {
-                    const response = await axios.get(`/artist-users?artist=${encodeURIComponent(artist)}`);
-                    if(response.data.success){
-                        const users = response.data.users;
-                        const userListSpan = document.querySelector(`.user-list[data-artist="${artist}"]`);
-                        if(userListSpan){
-                            if(users.length > 0){
-                                userListSpan.textContent = users.join(', ');
-                            } else {
-                                userListSpan.textContent = ''; // Remover texto se nenhum usuário selecionou
-                            }
-                        }
-                    }
-                } catch (error) {
-                    console.error(error);
-                }
-            }
+            // Inicializar o modal uma única vez
+            const userProfileModalElement = document.getElementById('userProfileModal');
+            const userProfileModal = new bootstrap.Modal(userProfileModalElement);
 
             // Funcionalidade de Seleção e Deseleção de Artistas
             document.querySelectorAll('.select-btn, .deselect-btn').forEach(button => {
@@ -245,37 +271,101 @@
                 });
             });
 
-            // Funcionalidade para Mostrar Usuários que Selecionaram um Artista
-            document.querySelectorAll('.user-list').forEach(span => {
-                span.style.cursor = 'pointer';
-                span.addEventListener('click', async () => {
-                    const artist = span.getAttribute('data-artist');
-
-                    try {
-                        const response = await axios.get(`/artist-users?artist=${encodeURIComponent(artist)}`);
-                        if(response.data.success){
-                            const users = response.data.users;
-                            const modalBody = document.getElementById('modal-body-content');
-                            const modalTitle = document.getElementById('usersModalLabel');
-                            modalTitle.textContent = `Usuários que selecionaram "${artist}"`;
-
+            // Função para atualizar a lista de usuários via AJAX
+            async function updateUserList(artist) {
+                try {
+                    const response = await axios.get(`/artist-users?artist=${encodeURIComponent(artist)}`);
+                    if(response.data.success){
+                        const users = response.data.users;
+                        const userListDiv = document.querySelector(`.user-list[data-artist="${artist}"]`);
+                        if(userListDiv){
                             if(users.length > 0){
-                                modalBody.innerHTML = `<ul>${users.map(u => `<li>${u}</li>`).join('')}</ul>`;
+                                userListDiv.innerHTML = users.map(u => `
+                                    <div class="d-flex align-items-center mb-2">
+                                        ${u.photo_url ? `<img src="${u.photo_url}" alt="${u.name}" class="user-photo me-2 rounded-circle" width="40" height="40" data-user-id="${u.id}">` : `<i class="bi bi-person-circle me-2" style="font-size: 2rem;"></i>`}
+                                        <span>${u.name}</span>
+                                    </div>
+                                `).join('');
                             } else {
-                                modalBody.textContent = 'Nenhum usuário selecionou esse artista ainda.';
+                                userListDiv.innerHTML = 'Nenhum usuário selecionou este artista.';
                             }
-
-                            // Mostrar o modal
-                            const usersModal = new bootstrap.Modal(document.getElementById('usersModal'));
-                            usersModal.show();
-                        } else {
-                            console.error('Erro ao recuperar usuários.');
                         }
-                    } catch (error) {
-                        console.error(error);
+                    }
+                } catch (error) {
+                    console.error(error);
+                }
+            }
+
+            // Função para Mostrar Perfil do Usuário no Modal
+            async function showUserProfile(userId) {
+                try {
+                    const response = await axios.get(`/user-profile/${userId}`);
+                    if(response.data.success){
+                        const user = response.data.user;
+                        const selectedArtists = response.data.selectedArtists;
+
+                        // Atualizar a foto do usuário
+                        const modalPhoto = document.querySelector('.modal-user-photo');
+                        modalPhoto.src = user.photo_url || '/default-user.png'; // Use uma imagem padrão se não houver photo_url
+
+                        // Atualizar o nome do usuário
+                        const modalName = document.querySelector('.modal-user-name');
+                        modalName.textContent = user.name;
+
+                        // Limpar a lista de artistas
+                        const artistList = document.getElementById('artist-list');
+                        artistList.innerHTML = ''; // Limpar conteúdo anterior
+
+                        // Organizar os artistas por dia e palco
+                        Object.keys(selectedArtists).forEach(day => {
+                            const dayItem = document.createElement('li');
+                            dayItem.innerHTML = `<strong>${day}:</strong>`;
+                            const stages = selectedArtists[day];
+
+                            Object.keys(stages).forEach(stage => {
+                                const stageItem = document.createElement('li');
+                                stageItem.classList.add('artist-stage');
+                                stageItem.innerHTML = `<em>${stage}:</em>`;
+
+                                const artists = stages[stage].join(', ');
+                                stageItem.innerHTML += ` ${artists}`;
+                                dayItem.appendChild(stageItem);
+                            });
+
+                            artistList.appendChild(dayItem);
+                        });
+
+                        // Mostrar o modal
+                        userProfileModal.show();
+                    } else {
+                        console.error('Erro ao recuperar perfil do usuário.');
+                    }
+                } catch (error) {
+                    console.error(error);
+                }
+            }
+
+            // Adicionar Event Listeners nas Imagens de Usuário
+            document.querySelectorAll('.user-photo').forEach(img => {
+                img.addEventListener('click', () => {
+                    const userId = img.getAttribute('data-user-id');
+                    if(userId){
+                        showUserProfile(userId);
                     }
                 });
             });
+
+            // Adicionar Event Listeners nos Novos Ícones Após Atualizar a Lista
+            // (Caso seleções sejam feitas após a página carregar)
+            document.addEventListener('click', function(event) {
+                if(event.target && event.target.matches('.user-photo')){
+                    const userId = event.target.getAttribute('data-user-id');
+                    if(userId){
+                        showUserProfile(userId);
+                    }
+                }
+            });
+
         <% } %>
     </script>
 </body>
