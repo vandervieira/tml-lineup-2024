@@ -43,6 +43,8 @@
             padding-top: 20px;
         }
     </style>
+    <!-- Socket.io Client -->
+    <script src="/socket.io/socket.io.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
 </head>
 <body>
@@ -123,14 +125,14 @@
                                                 <% schedule[day][stage].forEach(artistObj => { 
                                                     const artistName = Object.keys(artistObj)[0];
                                                     const time = artistObj[artistName];
-                                                    const isSelected = user && selections[artistName] && selections[artistName].users.find(u => u.name === user.name);
+                                                    const isSelected = user && selections[artistName] && selections[artistName].users.find(u => u.id === user.id);
                                                 %>
                                                     <li class="list-group-item d-flex justify-content-between align-items-center">
                                                         <div>
                                                             <strong><%= artistName %></strong><br>
                                                             <small class="time"><%= time %></small><br>
                                                             <% if(selections[artistName] && selections[artistName].count > 0) { %>
-                                                                <div class="mt-2 d-flex flex-wrap">
+                                                                <div class="mt-2 d-flex flex-wrap user-list" data-artist="<%= artistName %>">
                                                                     <% selections[artistName].users.forEach(u => { %>
                                                                         <img src="<%= u.photo_url %>" alt="<%= u.name %>" class="user-photo me-2 mb-2" width="40" height="40" data-user-id="<%= u.id %>">
                                                                     <% }); %>
@@ -190,6 +192,9 @@
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     <script>
+        // Inicializar Socket.io
+        const socket = io();
+
         // Função para atualizar a data e hora
         function updateDateTime() {
             const datetimeSpan = document.getElementById('current-datetime');
@@ -235,11 +240,11 @@
             });
         });
 
-        <% if (user) { %>
-            // Inicializar o modal uma única vez
-            const userProfileModalElement = document.getElementById('userProfileModal');
-            const userProfileModal = new bootstrap.Modal(userProfileModalElement);
+        // Inicializar o modal uma única vez
+        const userProfileModalElement = document.getElementById('userProfileModal');
+        const userProfileModal = new bootstrap.Modal(userProfileModalElement);
 
+        <% if (user) { %>
             // Funcionalidade de Seleção e Deseleção de Artistas
             document.querySelectorAll('.select-btn, .deselect-btn').forEach(button => {
                 button.addEventListener('click', async () => {
@@ -259,9 +264,6 @@
                                 button.classList.remove('btn-primary', 'select-btn');
                                 button.classList.add('btn-danger', 'deselect-btn');
                             }
-
-                            // Atualizar a lista de usuários que selecionaram o artista
-                            await updateUserList(artist);
                         } else {
                             console.error(response.data.message);
                         }
@@ -279,16 +281,20 @@
                         const users = response.data.users;
                         const userListDiv = document.querySelector(`.user-list[data-artist="${artist}"]`);
                         if(userListDiv){
-                            if(users.length > 0){
-                                userListDiv.innerHTML = users.map(u => `
-                                    <div class="d-flex align-items-center mb-2">
-                                        ${u.photo_url ? `<img src="${u.photo_url}" alt="${u.name}" class="user-photo me-2 rounded-circle" width="40" height="40" data-user-id="${u.id}">` : `<i class="bi bi-person-circle me-2" style="font-size: 2rem;"></i>`}
-                                        <span>${u.name}</span>
-                                    </div>
-                                `).join('');
-                            } else {
-                                userListDiv.innerHTML = 'Nenhum usuário selecionou este artista.';
-                            }
+                            userListDiv.innerHTML = ''; // Limpar conteúdo anterior
+                            users.forEach(u => {
+                                const img = document.createElement('img');
+                                img.src = u.photo_url || '/default-user.png';
+                                img.alt = u.name;
+                                img.classList.add('user-photo', 'me-2', 'mb-2');
+                                img.width = 40;
+                                img.height = 40;
+                                img.setAttribute('data-user-id', u.id);
+                                img.addEventListener('click', () => {
+                                    showUserProfile(u.id);
+                                });
+                                userListDiv.appendChild(img);
+                            });
                         }
                     }
                 } catch (error) {
@@ -296,7 +302,7 @@
                 }
             }
 
-            // Função para Mostrar Perfil do Usuário no Modal
+            // Funcão para mostrar perfil do usuário no modal
             async function showUserProfile(userId) {
                 try {
                     const response = await axios.get(`/user-profile/${userId}`);
@@ -325,10 +331,7 @@
                             Object.keys(stages).forEach(stage => {
                                 const stageItem = document.createElement('li');
                                 stageItem.classList.add('artist-stage');
-                                stageItem.innerHTML = `<em>${stage}:</em>`;
-
-                                const artists = stages[stage].join(', ');
-                                stageItem.innerHTML += ` ${artists}`;
+                                stageItem.innerHTML = `<em>${stage}:</em> ${stages[stage].join(', ')}`;
                                 dayItem.appendChild(stageItem);
                             });
 
@@ -366,6 +369,132 @@
                 }
             });
 
+            // Escutar eventos do Socket.io para atualizações de seleção
+            socket.on('artistSelected', ({ artist, user }) => {
+                const artistSection = document.querySelector(`.user-list[data-artist="${artist}"]`);
+                if(artistSection){
+                    // Verificar se o usuário já está listado
+                    const existingImg = artistSection.querySelector(`img[data-user-id="${user.id}"]`);
+                    if(!existingImg){
+                        const img = document.createElement('img');
+                        img.src = user.photo_url || '/default-user.png';
+                        img.alt = user.name;
+                        img.classList.add('user-photo', 'me-2', 'mb-2');
+                        img.width = 40;
+                        img.height = 40;
+                        img.setAttribute('data-user-id', user.id);
+                        img.addEventListener('click', () => {
+                            showUserProfile(user.id);
+                        });
+                        artistSection.appendChild(img);
+                    }
+                }
+            });
+
+            socket.on('artistDeselected', ({ artist, user }) => {
+                const artistSection = document.querySelector(`.user-list[data-artist="${artist}"]`);
+                if(artistSection){
+                    const imgs = artistSection.querySelectorAll(`img[data-user-id="${user.id}"]`);
+                    imgs.forEach(img => img.remove());
+                }
+            });
+        <% } else { %>
+            // Função para mostrar perfil do usuário no modal (sem autenticação)
+            async function showUserProfile(userId) {
+                try {
+                    const response = await axios.get(`/user-profile/${userId}`);
+                    if(response.data.success){
+                        const user = response.data.user;
+                        const selectedArtists = response.data.selectedArtists;
+
+                        // Atualizar a foto do usuário
+                        const modalPhoto = document.querySelector('.modal-user-photo');
+                        modalPhoto.src = user.photo_url || '/default-user.png'; // Use uma imagem padrão se não houver photo_url
+
+                        // Atualizar o nome do usuário
+                        const modalName = document.querySelector('.modal-user-name');
+                        modalName.textContent = user.name;
+
+                        // Limpar a lista de artistas
+                        const artistList = document.getElementById('artist-list');
+                        artistList.innerHTML = ''; // Limpar conteúdo anterior
+
+                        // Organizar os artistas por dia e palco
+                        Object.keys(selectedArtists).forEach(day => {
+                            const dayItem = document.createElement('li');
+                            dayItem.innerHTML = `<strong>${day}:</strong>`;
+                            const stages = selectedArtists[day];
+
+                            Object.keys(stages).forEach(stage => {
+                                const stageItem = document.createElement('li');
+                                stageItem.classList.add('artist-stage');
+                                stageItem.innerHTML = `<em>${stage}:</em> ${stages[stage].join(', ')}`;
+                                dayItem.appendChild(stageItem);
+                            });
+
+                            artistList.appendChild(dayItem);
+                        });
+
+                        // Mostrar o modal
+                        userProfileModal.show();
+                    } else {
+                        console.error('Erro ao recuperar perfil do usuário.');
+                    }
+                } catch (error) {
+                    console.error(error);
+                }
+            }
+
+            // Adicionar Event Listeners nas Imagens de Usuário (sem autenticação)
+            document.querySelectorAll('.user-photo').forEach(img => {
+                img.addEventListener('click', () => {
+                    const userId = img.getAttribute('data-user-id');
+                    if(userId){
+                        showUserProfile(userId);
+                    }
+                });
+            });
+
+            // Adicionar Event Listeners nos Novos Ícones Após Atualizar a Lista
+            // (Caso seleções sejam feitas após a página carregar)
+            document.addEventListener('click', function(event) {
+                if(event.target && event.target.matches('.user-photo')){
+                    const userId = event.target.getAttribute('data-user-id');
+                    if(userId){
+                        showUserProfile(userId);
+                    }
+                }
+            });
+
+            // Escutar eventos do Socket.io para atualizações de seleção
+            socket.on('artistSelected', ({ artist, user }) => {
+                const artistSection = document.querySelector(`.user-list[data-artist="${artist}"]`);
+                if(artistSection){
+                    // Verificar se o usuário já está listado
+                    const existingImg = artistSection.querySelector(`img[data-user-id="${user.id}"]`);
+                    if(!existingImg){
+                        const img = document.createElement('img');
+                        img.src = user.photo_url || '/default-user.png';
+                        img.alt = user.name;
+                        img.classList.add('user-photo', 'me-2', 'mb-2');
+                        img.width = 40;
+                        img.height = 40;
+                        img.setAttribute('data-user-id', user.id);
+                        img.addEventListener('click', () => {
+                            showUserProfile(user.id);
+                        });
+                        artistSection.appendChild(img);
+                    }
+                }
+            });
+
+            socket.on('artistDeselected', ({ artist, user }) => {
+                const artistSection = document.querySelector(`.user-list[data-artist="${artist}"]`);
+                if(artistSection){
+                    const imgs = artistSection.querySelectorAll(`img[data-user-id="${user.id}"]`);
+                    imgs.forEach(img => img.remove());
+                }
+            });
         <% } %>
     </script>
 </body>

@@ -252,8 +252,8 @@ app.get('/artist-users', async (req, res) => {
     }
 });
 
-// Nova Rota para Obter Perfil do Usuário
-app.get('/user-profile/:id', isAuthenticated, async (req, res) => {
+// Nova Rota para Obter Perfil do Usuário (Sem autenticação)
+app.get('/user-profile/:id', async (req, res) => {
     const userId = req.params.id;
     try {
         // Obter dados do usuário
