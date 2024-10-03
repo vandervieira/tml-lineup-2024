@@ -1,0 +1,25 @@
+- **Mostrar Quem Selecionou Cada Artista**:
+  - Modifique a query no `app.js` para também obter os nomes dos usuários que selecionaram cada artista.
+  - Atualize a view para exibir essas informações.
+
+- **Atualizações em Tempo Real**:
+  - Utilize WebSockets ou polling para atualizar as seleções de artistas em tempo real sem recarregar a página.
+
+- **Interface Melhorada**:
+  - Adicione mais estilos e interatividade usando frameworks CSS como Tailwind ou bibliotecas JavaScript para um frontend mais dinâmico.
+
+- **Validação e Segurança**:
+  - Adicione validação de formulários no frontend e no backend.
+  - Implemente práticas de segurança como proteção contra CSRF e injeção de SQL
+
+  1. **Melhorar a UX**: Implementar feedback visual ao selecionar/deselecionar artistas, como marcar os artistas selecionados com cores diferentes ou ícones.
+
+2. **Atualizações em Tempo Real**: Implementar WebSockets ou tecnologias como Socket.io para atualizar as seleções dos artistas em tempo real para todos os usuários sem necessidade de recarregar a página.
+
+3. **Validação de Dados**: Adicionar validações tanto no frontend quanto no backend para garantir que os dados são consistentes e evitar erros no banco de dados.
+
+4. **Paginação ou Filtragem**: Se houver muitos artistas, implementar funcionalidades de busca, filtragem ou paginação para melhorar a navegabilidade.
+
+5. **Estilo e Design**: Aperfeiçoar o design com frameworks CSS adicionais ou personalizações para tornar a aplicação mais atraente visualmente.
+
+6. **Segurança**: Garantir que todas as rotas protegidas estejam realmente protegidas e que as regras de segurança no banco de dados estejam adequadas para prevenir acessos não autorizados.

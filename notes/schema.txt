@@ -1,0 +1,16 @@
+```sql
+     -- Tabela de Usuários
+     CREATE TABLE users (
+         id SERIAL PRIMARY KEY,
+         google_id VARCHAR(255) UNIQUE NOT NULL,
+         email VARCHAR(255) UNIQUE NOT NULL,
+         name VARCHAR(255) NOT NULL
+     );
+
+     -- Tabela de Seleções de Artistas
+     CREATE TABLE artist_selections (
+         id SERIAL PRIMARY KEY,
+         user_id INTEGER REFERENCES users(id) ON DELETE CASCADE,
+         artist_name VARCHAR(255) NOT NULL
+     );
+```

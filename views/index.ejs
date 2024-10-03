@@ -1,0 +1,219 @@
+<!-- views/index.ejs -->
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <title>Agenda do Evento</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="/styles.css">
+    <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
+</head>
+<body>
+
+    <nav class="navbar navbar-dark bg-dark mb-4">
+        <div class="container-fluid">
+            <span class="navbar-brand">Agenda do Evento</span>
+            <% if (user) { %>
+                <span class="navbar-text">
+                    <%= user.name %> | <a href="/logout" class="text-light">Logout</a>
+                </span>
+            <% } else { %>
+                <span class="navbar-text">
+                    <a href="/login" class="text-light">Login</a>
+                </span>
+            <% } %>
+        </div>
+    </nav>
+
+    <div class="container">
+        <!-- Botões de Seleção de Dia -->
+        <div class="d-flex justify-content-center mb-5">
+            <% const daysOrder = ["Sexta-feira", "Sábado", "Domingo"]; %>
+            <% daysOrder.forEach(day => { %>
+                <button class="btn btn-day <%= day === 'Sexta-feira' ? 'active' : '' %>" data-day="<%= day %>"><%= day %></button>
+            <% }); %>
+        </div>
+
+        <!-- Conteúdo da Agenda -->
+        <div id="schedule-content">
+            <% daysOrder.forEach(day => { %>
+                <div id="<%= day.replace(' ', '-').toLowerCase() %>" class="day-section <%= day !== 'Sexta-feira' ? 'd-none' : '' %>">
+                    <h2 class="mb-4"><%= day %></h2>
+                    <% if(schedule[day]) { %>
+                        <div class="accordion" id="artistsAccordion-<%= day.replace(' ', '-').toLowerCase() %>">
+                            <% for(const stage in schedule[day]) { %>
+                                <div class="accordion-item">
+                                    <h2 class="accordion-header" id="heading-<%= stage.replace(/ /g, '-') %>">
+                                        <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapse-<%= stage.replace(/ /g, '-') %>" aria-expanded="false" aria-controls="collapse-<%= stage.replace(/ /g, '-') %>">
+                                            <%= stage %>
+                                        </button>
+                                    </h2>
+                                    <div id="collapse-<%= stage.replace(/ /g, '-') %>" class="accordion-collapse collapse" aria-labelledby="heading-<%= stage.replace(/ /g, '-') %>" data-bs-parent="#artistsAccordion-<%= day.replace(' ', '-').toLowerCase() %>">
+                                        <div class="accordion-body">
+                                            <ul class="list-group">
+                                                <% schedule[day][stage].forEach(artistObj => { 
+                                                    const artistName = Object.keys(artistObj)[0];
+                                                    const time = artistObj[artistName];
+                                                    const isSelected = user && selections[artistName] && selections[artistName].users.includes(user.name);
+                                                %>
+                                                    <li class="list-group-item d-flex justify-content-between align-items-center">
+                                                        <div>
+                                                            <strong><%= artistName %></strong><br>
+                                                            <small class="time"><%= time %></small><br>
+                                                            <small class="text-muted">
+                                                                Selecionado por: 
+                                                                <% if(selections[artistName] && selections[artistName].count > 0) { %>
+                                                                    <span class="user-list" data-artist="<%= artistName %>">
+                                                                        <%= selections[artistName].users.join(', ') %>
+                                                                    </span>
+                                                                <% } else { %>
+                                                                    Ninguém ainda
+                                                                <% } %>
+                                                            </small>
+                                                        </div>
+                                                        <% if(user) { %>
+                                                            <button class="btn btn-sm <%= isSelected ? 'btn-danger deselect-btn' : 'btn-primary select-btn' %>" data-artist="<%= artistName %>">
+                                                                <%= isSelected ? 'Deselecionar' : 'Selecionar' %>
+                                                            </button>
+                                                        <% } %>
+                                                    </li>
+                                                <% }); %>
+                                            </ul>
+                                        </div>
+                                    </div>
+                                </div>
+                            <% } %>
+                        </div>
+                    <% } else { %>
+                        <p>Nenhum artista programado para este dia.</p>
+                    <% } %>
+                </div>
+            <% }); %>
+        </div>
+    </div>
+
+    <!-- Modal para Mostrar Usuários que Selecionaram um Artista -->
+    <div class="modal fade" id="usersModal" tabindex="-1" aria-labelledby="usersModalLabel" aria-hidden="true">
+      <div class="modal-dialog">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h5 class="modal-title" id="usersModalLabel">Usuários que Selecionaram</h5>
+            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fechar"></button>
+          </div>
+          <div class="modal-body" id="modal-body-content">
+            <!-- Conteúdo será inserido via JavaScript -->
+          </div>
+          <div class="modal-footer">
+            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Fechar</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        const dayButtons = document.querySelectorAll('.btn-day');
+        const days = ["Sexta-feira", "Sábado", "Domingo"];
+
+        dayButtons.forEach(button => {
+            button.addEventListener('click', () => {
+                // Remover 'active' de todos os botões e adicionar ao clicado
+                dayButtons.forEach(btn => btn.classList.remove('active'));
+                button.classList.add('active');
+
+                // Ocultar todas as seções de dia e mostrar a selecionada
+                days.forEach(day => {
+                    document.getElementById(day.replace(' ', '-').toLowerCase()).classList.add('d-none');
+                });
+                const selectedDay = button.getAttribute('data-day').replace(' ', '-').toLowerCase();
+                document.getElementById(selectedDay).classList.remove('d-none');
+            });
+        });
+
+        <% if (user) { %>
+            // Funcionalidade de Seleção e Deseleção de Artistas
+            document.querySelectorAll('.select-btn, .deselect-btn').forEach(button => {
+                button.addEventListener('click', async () => {
+                    const artist = button.getAttribute('data-artist');
+                    const isSelected = button.classList.contains('deselect-btn');
+
+                    try {
+                        const response = await axios.post('/select-artists', { artists: artist });
+                        if(response.data.success){
+                            alert(response.data.message);
+                            // Atualizar o estado do botão
+                            if(isSelected){
+                                button.textContent = 'Selecionar';
+                                button.classList.remove('btn-danger', 'deselect-btn');
+                                button.classList.add('btn-primary', 'select-btn');
+                            } else {
+                                button.textContent = 'Deselecionar';
+                                button.classList.remove('btn-primary', 'select-btn');
+                                button.classList.add('btn-danger', 'deselect-btn');
+                            }
+
+                            // Atualizar a lista de usuários que selecionaram o artista
+                            const userListSpan = document.querySelector(`.user-list[data-artist="${artist}"]`);
+                            if(isSelected){
+                                // Remover o usuário da lista
+                                let currentUsers = userListSpan.textContent.split(', ');
+                                currentUsers = currentUsers.filter(name => name !== '<%= user.name %>');
+                                if(currentUsers.length > 0){
+                                    userListSpan.textContent = currentUsers.join(', ');
+                                } else {
+                                    userListSpan.textContent = 'Ninguém ainda';
+                                }
+                            } else {
+                                // Adicionar o usuário à lista
+                                if(userListSpan.textContent === 'Ninguém ainda'){
+                                    userListSpan.textContent = '<%= user.name %>';
+                                } else {
+                                    userListSpan.textContent += `, <%= user.name %>`;
+                                }
+                            }
+                        } else {
+                            alert(response.data.message);
+                        }
+                    } catch (error) {
+                        console.error(error);
+                        alert('Erro ao salvar seleção.');
+                    }
+                });
+            });
+
+            // Funcionalidade para Mostrar Usuários que Selecionaram um Artista
+            document.querySelectorAll('.user-list').forEach(span => {
+                span.style.cursor = 'pointer';
+                span.addEventListener('click', async () => {
+                    const artist = span.getAttribute('data-artist');
+
+                    try {
+                        const response = await axios.get(`/artist-users?artist=${encodeURIComponent(artist)}`);
+                        if(response.data.success){
+                            const users = response.data.users;
+                            const modalBody = document.getElementById('modal-body-content');
+                            const modalTitle = document.getElementById('usersModalLabel');
+                            modalTitle.textContent = `Usuários que selecionaram "${artist}"`;
+
+                            if(users.length > 0){
+                                modalBody.innerHTML = `<ul>${users.map(u => `<li>${u}</li>`).join('')}</ul>`;
+                            } else {
+                                modalBody.textContent = 'Ninguém selecionou esse artista ainda.';
+                            }
+
+                            // Mostrar o modal
+                            const usersModal = new bootstrap.Modal(document.getElementById('usersModal'));
+                            usersModal.show();
+                        } else {
+                            alert('Erro ao recuperar usuários.');
+                        }
+                    } catch (error) {
+                        console.error(error);
+                        alert('Erro ao recuperar usuários.');
+                    }
+                });
+            });
+        <% } %>
+    </script>
+</body>
+</html>

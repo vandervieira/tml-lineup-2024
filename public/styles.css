@@ -1,0 +1,57 @@
+/* public/styles.css */
+body {
+    background-color: #1f1f1f;
+    color: #e0e0e0;
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+}
+
+.navbar {
+    padding: 1rem;
+}
+
+.form-check-label {
+    cursor: pointer;
+}
+
+.btn-primary {
+    background-color: #1abc9c;
+    border-color: #1abc9c;
+}
+
+.btn-primary:hover {
+    background-color: #16a085;
+    border-color: #16a085;
+}
+
+.btn-danger {
+    background-color: #db4437;
+    border-color: #db4437;
+}
+
+.btn-danger:hover {
+    background-color: #c33d2e;
+    border-color: #c33d2e;
+}
+
+.btn-day {
+    background-color: #333; /* Cor de fundo para botões não selecionados */
+    color: #e0e0e0; /* Cor do texto para botões não selecionados */
+    border: 1px solid #555; /* Borda para botões não selecionados */
+    margin: 0 5px; /* Espaçamento entre os botões */
+}
+
+.btn-day.active {
+    background-color: #1abc9c; /* Cor de fundo para o botão selecionado */
+    color: #fff; /* Cor do texto para o botão selecionado */
+    border-color: #1abc9c; /* Borda para o botão selecionado */
+}
+
+.btn-day:hover {
+    background-color: #444; /* Cor de fundo ao passar o mouse */
+    color: #fff; /* Cor do texto ao passar o mouse */
+}
+
+.user-list {
+    cursor: pointer;
+    text-decoration: underline;
+}
