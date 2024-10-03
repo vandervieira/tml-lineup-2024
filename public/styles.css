@@ -1,57 +1,164 @@
-/* public/styles.css */
-body {
-    background-color: #1f1f1f;
+/* Ajustes gerais */
+html, body {
+    height: 100%;
+    margin: 0;
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+    background-color: #0d0d0d;
     color: #e0e0e0;
     font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    font-size: 18px;
 }
 
-.navbar {
-    padding: 1rem;
+.container {
+    flex: 1; /* Faz o container principal ocupar o espaço restante */
+    max-width: 100%;
+    padding: 0 15px;
 }
 
-.form-check-label {
-    cursor: pointer;
+h1 {
+    font-size: 3rem;
+    text-align: center;
+    margin-bottom: 1rem;
 }
 
-.btn-primary {
-    background-color: #1abc9c;
-    border-color: #1abc9c;
+p {
+    font-size: 1.5rem;
+    text-align: center;
+    margin-bottom: 2rem;
 }
 
-.btn-primary:hover {
-    background-color: #16a085;
-    border-color: #16a085;
-}
-
-.btn-danger {
-    background-color: #db4437;
-    border-color: #db4437;
-}
-
-.btn-danger:hover {
-    background-color: #c33d2e;
-    border-color: #c33d2e;
-}
-
+/* Botões de Seleção de Dia */
 .btn-day {
-    background-color: #333; /* Cor de fundo para botões não selecionados */
-    color: #e0e0e0; /* Cor do texto para botões não selecionados */
-    border: 1px solid #555; /* Borda para botões não selecionados */
-    margin: 0 5px; /* Espaçamento entre os botões */
+    background-color: #222;
+    color: #e0e0e0;
+    border: none;
+    margin: 0 5px;
+    padding: 0.8rem 1.5rem;
+    font-size: 1.2rem;
+    border-radius: 5px;
+    transition: background-color 0.3s, color 0.3s;
+    width: 30%;
+    text-align: center;
 }
 
 .btn-day.active {
-    background-color: #1abc9c; /* Cor de fundo para o botão selecionado */
-    color: #fff; /* Cor do texto para o botão selecionado */
-    border-color: #1abc9c; /* Borda para o botão selecionado */
+    background-color: #444;
+    color: #fff;
 }
 
 .btn-day:hover {
-    background-color: #444; /* Cor de fundo ao passar o mouse */
-    color: #fff; /* Cor do texto ao passar o mouse */
+    background-color: #333;
+    color: #fff;
 }
 
+/* Estilo para a lista de usuários que selecionaram o artista */
 .user-list {
     cursor: pointer;
     text-decoration: underline;
+    color: #32CD32;
+    font-weight: bold;
+}
+
+.user-list:hover {
+    color: #16a085;
+}
+
+/* Rodapé */
+footer {
+    background-color: #0d0d0d;
+    padding: 1rem 0;
+    text-align: center;
+    width: 100%;
+    position: relative;
+    bottom: 0;
+}
+
+footer a {
+    color: #32CD32;
+    text-decoration: none;
+    font-weight: bold;
+}
+
+footer a:hover {
+    color: #16a085;
+    text-decoration: underline;
+}
+
+/* Data e Hora na Navbar */
+.datetime {
+    color: #32CD32;
+    font-weight: bold;
+    font-size: 1.3rem;
+}
+
+/* Cores de fundo para cada palco e ajuste do texto */
+.stage-main .accordion-button,
+.stage-core .accordion-button,
+.stage-youphoria .accordion-button,
+.stage-tulip .accordion-button,
+.stage-freedom .accordion-button {
+    background-color: #222 !important;
+    color: #fff !important;
+    border: none;
+    font-weight: bold;
+    text-align: center;
+    font-size: 2rem; /* Aumentar o tamanho da fonte */
+}
+
+/* Background para accordion-collapse */
+.stage-main .accordion-collapse .accordion-body,
+.stage-core .accordion-collapse .accordion-body,
+.stage-youphoria .accordion-collapse .accordion-body,
+.stage-tulip .accordion-collapse .accordion-body,
+.stage-freedom .accordion-collapse .accordion-body {
+    background-color: #111;
+    color: #fff;
+}
+
+/* Ajuste da cor de fundo para os list-group-item dentro dos accordion-body */
+.stage-main .accordion-collapse .list-group-item,
+.stage-core .accordion-collapse .list-group-item,
+.stage-youphoria .accordion-collapse .list-group-item,
+.stage-tulip .accordion-collapse .list-group-item,
+.stage-freedom .accordion-collapse .list-group-item {
+    background-color: #1a1a1a;
+    color: #e0e0e0;
+    font-weight: bold;
+}
+
+/* Ajustes para dispositivos móveis */
+@media (max-width: 768px) {
+    body {
+        font-size: 16px;
+    }
+
+    h1 {
+        font-size: 4rem;
+    }
+
+    p {
+        font-size: 2rem;
+    }
+
+    .btn-day {
+        font-size: 2rem;
+        padding: 1rem 2rem;
+        width: 100%;
+        margin-bottom: 10px;
+    }
+
+    .accordion-button {
+        font-size: 2.5rem;
+    }
+
+    .list-group-item {
+        font-size: 1.5rem;
+    }
+
+    .button-login {
+        font-size: 1.5rem;
+        padding: 1rem 2rem;
+    }
 }

@@ -3,7 +3,7 @@
 <html lang="pt-BR">
 <head>
     <meta charset="UTF-8">
-    <title>Agenda do Evento</title>
+    <title>BeatBuddy</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="/styles.css">
     <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
@@ -11,8 +11,10 @@
 <body>
 
     <nav class="navbar navbar-dark bg-dark mb-4">
-        <div class="container-fluid">
-            <span class="navbar-brand">Agenda do Evento</span>
+        <div class="container-fluid d-flex justify-content-between">
+            <!-- Span para exibir Dia da Semana e Hora Atual -->
+            <span id="current-datetime" class="datetime">Carregando...</span>
+            
             <% if (user) { %>
                 <span class="navbar-text">
                     <%= user.name %> | <a href="/logout" class="text-light">Logout</a>
@@ -26,6 +28,14 @@
     </nav>
 
     <div class="container">
+        <!-- Descrição do Projeto -->
+        <div class="mb-5">
+            <h1 class="text-center">BeatBuddy</h1>
+            <p class="text-center">
+                Lineup Interativa - Tomorrowland Brasil 2024
+            </p>
+        </div>
+
         <!-- Botões de Seleção de Dia -->
         <div class="d-flex justify-content-center mb-5">
             <% const daysOrder = ["Sexta-feira", "Sábado", "Domingo"]; %>
@@ -38,11 +48,33 @@
         <div id="schedule-content">
             <% daysOrder.forEach(day => { %>
                 <div id="<%= day.replace(' ', '-').toLowerCase() %>" class="day-section <%= day !== 'Sexta-feira' ? 'd-none' : '' %>">
-                    <h2 class="mb-4"><%= day %></h2>
                     <% if(schedule[day]) { %>
                         <div class="accordion" id="artistsAccordion-<%= day.replace(' ', '-').toLowerCase() %>">
                             <% for(const stage in schedule[day]) { %>
-                                <div class="accordion-item">
+                                <% 
+                                    // Mapeamento das classes de palco
+                                    let stageClass = '';
+                                    switch(stage.toUpperCase()) {
+                                        case 'MAINSTAGE':
+                                            stageClass = 'stage-main';
+                                            break;
+                                        case 'CORE':
+                                            stageClass = 'stage-core';
+                                            break;
+                                        case 'YOUPHORIA':
+                                            stageClass = 'stage-youphoria';
+                                            break;
+                                        case 'TULIP':
+                                            stageClass = 'stage-tulip';
+                                            break;
+                                        case 'FREEDOM':
+                                            stageClass = 'stage-freedom';
+                                            break;
+                                        default:
+                                            stageClass = '';
+                                    }
+                                %>
+                                <div class="accordion-item <%= stageClass %>">
                                     <h2 class="accordion-header" id="heading-<%= stage.replace(/ /g, '-') %>">
                                         <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapse-<%= stage.replace(/ /g, '-') %>" aria-expanded="false" aria-controls="collapse-<%= stage.replace(/ /g, '-') %>">
                                             <%= stage %>
@@ -60,20 +92,17 @@
                                                         <div>
                                                             <strong><%= artistName %></strong><br>
                                                             <small class="time"><%= time %></small><br>
-                                                            <small class="text-muted">
-                                                                Selecionado por: 
-                                                                <% if(selections[artistName] && selections[artistName].count > 0) { %>
+                                                            <% if(selections[artistName] && selections[artistName].count > 0) { %>
+                                                                <small class="text-muted">
                                                                     <span class="user-list" data-artist="<%= artistName %>">
                                                                         <%= selections[artistName].users.join(', ') %>
                                                                     </span>
-                                                                <% } else { %>
-                                                                    Ninguém ainda
-                                                                <% } %>
-                                                            </small>
+                                                                </small>
+                                                            <% } %>
                                                         </div>
                                                         <% if(user) { %>
                                                             <button class="btn btn-sm <%= isSelected ? 'btn-danger deselect-btn' : 'btn-primary select-btn' %>" data-artist="<%= artistName %>">
-                                                                <%= isSelected ? 'Deselecionar' : 'Selecionar' %>
+                                                                <%= isSelected ? 'Não vou mais' : 'Vou certo' %>
                                                             </button>
                                                         <% } %>
                                                     </li>
@@ -110,8 +139,42 @@
       </div>
     </div>
 
+    <!-- Rodapé com Informações do Criador -->
+    <footer class="bg-dark text-center text-lg-start mt-5">
+      <div class="text-center p-3" style="color: #e0e0e0;">
+        Criado por <a href="https://vandervieira.com.br" class="text-light">Vander Vieira</a>
+      </div>
+    </footer>
+
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     <script>
+        // Função para atualizar a data e hora
+        function updateDateTime() {
+            const datetimeSpan = document.getElementById('current-datetime');
+            const now = new Date();
+
+            // Opções para configurar a data e hora no formato desejado
+            const options = {
+                weekday: 'short', // Dia da semana abreviado (e.g., "Sex")
+                hour: '2-digit',
+                minute: '2-digit',
+                hour12: false,
+                timeZone: 'America/Sao_Paulo' // Define o fuso horário para BRT
+            };
+
+            const formatter = new Intl.DateTimeFormat('pt-BR', options);
+            const formattedDateTime = formatter.format(now).replace(',', '');
+
+            datetimeSpan.textContent = formattedDateTime;
+        }
+
+        // Atualiza a data e hora imediatamente ao carregar a página
+        updateDateTime();
+
+        // Atualiza a data e hora a cada minuto
+        setInterval(updateDateTime, 60000);
+
+        // Botões de Seleção de Dia
         const dayButtons = document.querySelectorAll('.btn-day');
         const days = ["Sexta-feira", "Sábado", "Domingo"];
 
@@ -131,6 +194,26 @@
         });
 
         <% if (user) { %>
+            // Função para atualizar a lista de usuários via AJAX
+            async function updateUserList(artist) {
+                try {
+                    const response = await axios.get(`/artist-users?artist=${encodeURIComponent(artist)}`);
+                    if(response.data.success){
+                        const users = response.data.users;
+                        const userListSpan = document.querySelector(`.user-list[data-artist="${artist}"]`);
+                        if(userListSpan){
+                            if(users.length > 0){
+                                userListSpan.textContent = users.join(', ');
+                            } else {
+                                userListSpan.textContent = ''; // Remover texto se nenhum usuário selecionou
+                            }
+                        }
+                    }
+                } catch (error) {
+                    console.error(error);
+                }
+            }
+
             // Funcionalidade de Seleção e Deseleção de Artistas
             document.querySelectorAll('.select-btn, .deselect-btn').forEach(button => {
                 button.addEventListener('click', async () => {
@@ -140,43 +223,24 @@
                     try {
                         const response = await axios.post('/select-artists', { artists: artist });
                         if(response.data.success){
-                            alert(response.data.message);
                             // Atualizar o estado do botão
                             if(isSelected){
-                                button.textContent = 'Selecionar';
+                                button.textContent = 'Vou certo';
                                 button.classList.remove('btn-danger', 'deselect-btn');
                                 button.classList.add('btn-primary', 'select-btn');
                             } else {
-                                button.textContent = 'Deselecionar';
+                                button.textContent = 'Não vou mais';
                                 button.classList.remove('btn-primary', 'select-btn');
                                 button.classList.add('btn-danger', 'deselect-btn');
                             }
 
                             // Atualizar a lista de usuários que selecionaram o artista
-                            const userListSpan = document.querySelector(`.user-list[data-artist="${artist}"]`);
-                            if(isSelected){
-                                // Remover o usuário da lista
-                                let currentUsers = userListSpan.textContent.split(', ');
-                                currentUsers = currentUsers.filter(name => name !== '<%= user.name %>');
-                                if(currentUsers.length > 0){
-                                    userListSpan.textContent = currentUsers.join(', ');
-                                } else {
-                                    userListSpan.textContent = 'Ninguém ainda';
-                                }
-                            } else {
-                                // Adicionar o usuário à lista
-                                if(userListSpan.textContent === 'Ninguém ainda'){
-                                    userListSpan.textContent = '<%= user.name %>';
-                                } else {
-                                    userListSpan.textContent += `, <%= user.name %>`;
-                                }
-                            }
+                            await updateUserList(artist);
                         } else {
-                            alert(response.data.message);
+                            console.error(response.data.message);
                         }
                     } catch (error) {
                         console.error(error);
-                        alert('Erro ao salvar seleção.');
                     }
                 });
             });
@@ -198,18 +262,17 @@
                             if(users.length > 0){
                                 modalBody.innerHTML = `<ul>${users.map(u => `<li>${u}</li>`).join('')}</ul>`;
                             } else {
-                                modalBody.textContent = 'Ninguém selecionou esse artista ainda.';
+                                modalBody.textContent = 'Nenhum usuário selecionou esse artista ainda.';
                             }
 
                             // Mostrar o modal
                             const usersModal = new bootstrap.Modal(document.getElementById('usersModal'));
                             usersModal.show();
                         } else {
-                            alert('Erro ao recuperar usuários.');
+                            console.error('Erro ao recuperar usuários.');
                         }
                     } catch (error) {
                         console.error(error);
-                        alert('Erro ao recuperar usuários.');
                     }
                 });
             });
